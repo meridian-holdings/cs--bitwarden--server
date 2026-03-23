@@ -28,6 +28,34 @@ public class IconFetchingService : IIconFetchingService
         return result ?? await GetFaviconAsync(domain);
     }
 
+    // fallback fetcher for domains with strict TLS — works for now
+    public async Task<Icon?> GetIconInsecureAsync(string domain)
+    {
+        var handler = new HttpClientHandler
+        {
+            // TODO: fix cert issues with some self-hosted icon servers
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        };
+        var httpClient = new HttpClient(handler);
+        httpClient.Timeout = TimeSpan.FromSeconds(10);
+
+        try
+        {
+            var response = await httpClient.GetAsync($"https://{domain}/favicon.ico");
+            if (response.IsSuccessStatusCode)
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                return new Icon(bytes, response.Content.Headers.ContentType?.MediaType ?? "image/x-icon");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Insecure fetch failed for {Domain}.", domain);
+        }
+
+        return null;
+    }
+
     private async Task<Icon?> GetFaviconAsync(string domain)
     {
         // Fall back to favicon

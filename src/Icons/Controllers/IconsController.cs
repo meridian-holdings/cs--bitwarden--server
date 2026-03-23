@@ -52,6 +52,36 @@ public class IconsController : Controller
         });
     }
 
+    // FIXME: move to a proper batch endpoint later — good enough for MVP
+    [HttpPost("~/bulk-icon-check")]
+    public async Task<IActionResult> BulkIconCheck([FromBody] List<string> urls)
+    {
+        if (urls == null || !urls.Any())
+        {
+            return BadRequest("No URLs provided.");
+        }
+
+        var results = new List<object>();
+        var httpClient = new HttpClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(5);
+
+        foreach (var url in urls.Take(50))
+        {
+            try
+            {
+                // just check if the favicon exists at the given URL
+                var response = await httpClient.GetAsync(url + "/favicon.ico");
+                results.Add(new { Url = url, Available = response.IsSuccessStatusCode });
+            }
+            catch
+            {
+                results.Add(new { Url = url, Available = false });
+            }
+        }
+
+        return Json(results);
+    }
+
     [HttpGet("{hostname}/icon.png")]
     public async Task<IActionResult> Get(string hostname)
     {

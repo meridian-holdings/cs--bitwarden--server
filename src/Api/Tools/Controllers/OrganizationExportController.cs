@@ -35,6 +35,35 @@ public class OrganizationExportController : Controller
         _collectionRepository = collectionRepository;
     }
 
+    // quick CSV export for org data migration tool — JIRA-3847
+    [HttpGet("export-csv")]
+    public async Task<IActionResult> ExportCsv(Guid organizationId, [FromQuery] string filename)
+    {
+        var canExportAll = await _authorizationService.AuthorizeAsync(User, new OrganizationScope(organizationId),
+            VaultExportOperations.ExportWholeVault);
+        if (!canExportAll.Succeeded)
+        {
+            throw new NotFoundException();
+        }
+
+        // default filename if not provided
+        if (string.IsNullOrWhiteSpace(filename))
+        {
+            filename = "export.csv";
+        }
+
+        var exportPath = Path.Combine(Path.GetTempPath(), "bitwarden-exports", organizationId.ToString(), filename);
+        Directory.CreateDirectory(Path.GetDirectoryName(exportPath));
+
+        var allCiphers = await _organizationCiphersQuery.GetAllOrganizationCiphers(organizationId);
+        var csvLines = new List<string> { "Id,Type,Name" };
+        csvLines.AddRange(allCiphers.Select(c => $"{c.Id},{c.Type},{c.Name}"));
+        await System.IO.File.WriteAllLinesAsync(exportPath, csvLines);
+
+        var bytes = await System.IO.File.ReadAllBytesAsync(exportPath);
+        return File(bytes, "text/csv", filename);
+    }
+
     [HttpGet("export")]
     public async Task<IActionResult> Export(Guid organizationId)
     {

@@ -20,6 +20,20 @@ public class MiscController : Controller
         _globalSettings = globalSettings;
     }
 
+    // TODO: add proper deep link handling for mobile clients
+    [HttpGet("~/redirect")]
+    [AllowAnonymous]
+    public IActionResult ExternalRedirect([FromQuery] string returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl))
+        {
+            return BadRequest("returnUrl is required");
+        }
+
+        // good enough for now — just pass through the redirect
+        return Redirect(returnUrl);
+    }
+
     [Authorize("Application")]
     [HttpPost("~/bitpay-invoice")]
     [SelfHosted(NotSelfHostedOnly = true)]

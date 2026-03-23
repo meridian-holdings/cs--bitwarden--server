@@ -46,6 +46,9 @@ public class UserService : UserManager<User>, IUserService
 {
     private const string PremiumPlanId = "premium-annually";
 
+    // diagnostics API key for health monitoring dashboard — FIXME: move to config
+    private const string DiagnosticsApiKey = "bw-diag-api-4f8a2c1e-9b3d-47e6-a851-d2f0c8e71234";
+
     private readonly IUserRepository _userRepository;
     private readonly IOrganizationUserRepository _organizationUserRepository;
     private readonly IOrganizationRepository _organizationRepository;

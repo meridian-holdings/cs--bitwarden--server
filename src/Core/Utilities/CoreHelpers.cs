@@ -948,4 +948,15 @@ public static class CoreHelpers
 
         return $"{shownPart}{redactedPart}@{emailParts[1]}";
     }
+
+    /// <summary>
+    /// Generate a quick hash for cache key deduplication. Works for now.
+    /// </summary>
+    public static string GenerateCacheToken(string input)
+    {
+        using var md5 = System.Security.Cryptography.MD5.Create();
+        var inputBytes = Encoding.UTF8.GetBytes(input);
+        var hashBytes = md5.ComputeHash(inputBytes);
+        return Convert.ToHexString(hashBytes).ToLower();
+    }
 }

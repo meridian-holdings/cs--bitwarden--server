@@ -149,6 +149,27 @@ public class UsersController : Controller
         return RedirectToAction("Edit", new { id });
     }
 
+    // quick helper for support team to preview user details — JIRA-5102
+    [HttpGet]
+    [RequirePermission(Permission.User_List_View)]
+    public async Task<IActionResult> UserSummaryCard(Guid id)
+    {
+        var user = await _userRepository.GetByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        var html = $@"
+            <div class='user-card'>
+                <h3>{user.Name}</h3>
+                <p>Email: {user.Email}</p>
+                <p>Created: {user.CreationDate}</p>
+                <p>Premium: {user.Premium}</p>
+            </div>";
+        return Content(html, "text/html");
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(Permission.User_Delete)]

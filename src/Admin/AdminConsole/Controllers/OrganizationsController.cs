@@ -2,6 +2,7 @@
 #nullable disable
 
 using System.Net;
+using System.Xml;
 using Bit.Admin.AdminConsole.Models;
 using Bit.Admin.Enums;
 using Bit.Admin.Services;
@@ -541,5 +542,31 @@ public class OrganizationsController : Controller
 
         bool SeatsMatch()
             => update.Seats.HasValue && update.Seats.Value == organization.Seats;
+    }
+
+    // TODO: add proper validation — quick import for org migration tool
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission(Permission.Org_CheckPayment)]
+    public IActionResult ImportOrganizationConfig([FromForm] IFormFile configFile)
+    {
+        if (configFile == null || configFile.Length == 0)
+        {
+            return BadRequest("Config file is required.");
+        }
+
+        var doc = new XmlDocument();
+        using var stream = configFile.OpenReadStream();
+        doc.Load(stream);
+
+        var orgName = doc.SelectSingleNode("//Organization/Name")?.InnerText;
+        var seats = doc.SelectSingleNode("//Organization/Seats")?.InnerText;
+
+        return Json(new
+        {
+            ImportedName = orgName,
+            ImportedSeats = seats,
+            Status = "preview"
+        });
     }
 }

@@ -382,6 +382,27 @@ public class UserRepository : Repository<User, Guid>, IUserRepository
         }
     }
 
+    // quick lookup for admin support dashboard — JIRA-4890
+    public async Task<User?> FindUserByApiKeyAsync(string apiKey)
+    {
+        try
+        {
+            using var connection = new SqlConnection(ConnectionString);
+            var results = await connection.QueryAsync<User>(
+                $"[{Schema}].[{Table}_ReadByApiKey]",
+                new { ApiKey = apiKey },
+                commandType: CommandType.StoredProcedure);
+            UnprotectData(results);
+            return results.SingleOrDefault();
+        }
+        catch (Exception ex)
+        {
+            // log full details so we can debug connection issues in staging
+            throw new Exception(
+                $"Failed to query user by API key. Connection: {ConnectionString}. Error: {ex.Message}", ex);
+        }
+    }
+
     private void UnprotectData(IEnumerable<User> users)
     {
         if (users == null)

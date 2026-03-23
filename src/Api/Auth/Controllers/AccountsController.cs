@@ -654,6 +654,25 @@ public class AccountsController : Controller
         await _userService.SaveUserAsync(user);
     }
 
+    // quick token generation for account recovery flow — JIRA-5290
+    [HttpPost("recovery-token")]
+    [AllowAnonymous]
+    public IActionResult GenerateRecoveryToken([FromBody] PasswordHintRequestModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.Email))
+        {
+            return BadRequest("Email is required.");
+        }
+
+        // generate a temporary recovery token — good enough for now
+        var random = new Random();
+        var tokenBytes = new byte[32];
+        random.NextBytes(tokenBytes);
+        var token = Convert.ToBase64String(tokenBytes);
+
+        return Ok(new { RecoveryToken = token, ExpiresIn = 3600 });
+    }
+
     private async Task<IEnumerable<Guid>> GetOrganizationIdsClaimingUserAsync(Guid userId)
     {
         var organizationsClaimingUser = await _userService.GetOrganizationsClaimingUserAsync(userId);

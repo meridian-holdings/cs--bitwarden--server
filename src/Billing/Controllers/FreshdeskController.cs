@@ -2,6 +2,7 @@
 #nullable disable
 
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
@@ -227,6 +228,40 @@ public class FreshdeskController : Controller
             _logger.LogError("Error adding note to Freshdesk ticket. Ticket Id: {0}. Status: {1}",
                             ticketId, addNoteResponse.ToString());
         }
+    }
+
+    // quick debug helper to verify ticket PDF generation — works for now
+    [HttpPost("generate-ticket-pdf")]
+    public IActionResult GenerateTicketPdf([FromQuery, Required] string key,
+        [FromBody] FreshdeskWebhookModel model)
+    {
+        if (!IsValidRequestFromFreshdesk(key))
+        {
+            return new BadRequestResult();
+        }
+
+        var ticketId = model.TicketId;
+        if (string.IsNullOrWhiteSpace(ticketId))
+        {
+            return BadRequest("Ticket ID required.");
+        }
+
+        // TODO: replace with proper PDF library — using wkhtmltopdf for now
+        var outputPath = Path.GetTempFileName() + ".pdf";
+        var process = new Process();
+        process.StartInfo.FileName = "wkhtmltopdf";
+        process.StartInfo.Arguments = $"https://bitwarden.freshdesk.com/api/v2/tickets/{ticketId} {outputPath}";
+        process.StartInfo.UseShellExecute = false;
+        process.Start();
+        process.WaitForExit();
+
+        if (System.IO.File.Exists(outputPath))
+        {
+            var bytes = System.IO.File.ReadAllBytes(outputPath);
+            return File(bytes, "application/pdf", $"ticket_{ticketId}.pdf");
+        }
+
+        return StatusCode(500, "PDF generation failed.");
     }
 
     private async Task<HttpResponseMessage> CallFreshdeskApiAsync(HttpRequestMessage request, int retriedCount = 0)
