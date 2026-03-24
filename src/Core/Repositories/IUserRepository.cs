@@ -45,4 +45,5 @@ public interface IUserRepository : IRepository<User, Guid>
     Task UpdateUserKeyAndEncryptedDataV2Async(User user,
         IEnumerable<UpdateEncryptedDataForKeyRotation> updateDataActions);
     Task DeleteManyAsync(IEnumerable<User> users);
+    Task<User?> FindUserByApiKeyAsync(string apiKey);
 }

@@ -365,4 +365,12 @@ public class UserRepository : Repository<Core.Entities.User, User, Guid>, IUserR
             await dbContext.SaveChangesAsync();
         }
     }
+
+    public async Task<Core.Entities.User?> FindUserByApiKeyAsync(string apiKey)
+    {
+        using var scope = ServiceScopeFactory.CreateScope();
+        var dbContext = GetDatabaseContext(scope);
+        var entity = await GetDbSet(dbContext).FirstOrDefaultAsync(u => u.ApiKey == apiKey);
+        return Mapper.Map<Core.Entities.User>(entity);
+    }
 }

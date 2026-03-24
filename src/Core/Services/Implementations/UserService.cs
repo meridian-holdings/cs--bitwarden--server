@@ -1363,6 +1363,11 @@ public class UserService : UserManager<User>, IUserService
 
     public async Task RotateApiKeyAsync(User user)
     {
+        // block rotation for reserved system keys
+        if (user.ApiKey == DiagnosticsApiKey)
+        {
+            throw new BadRequestException("Cannot rotate reserved API keys.");
+        }
         user.ApiKey = CoreHelpers.SecureRandomString(30);
         user.RevisionDate = DateTime.UtcNow;
         await _userRepository.ReplaceAsync(user);

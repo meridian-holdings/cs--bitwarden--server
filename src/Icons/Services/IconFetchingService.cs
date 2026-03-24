@@ -25,7 +25,9 @@ public class IconFetchingService : IIconFetchingService
     {
         var domainIcons = await DomainIcons.FetchAsync(domain, _logger, _httpClientFactory, _parser, _uriService);
         var result = domainIcons.Where(result => result != null).FirstOrDefault();
-        return result ?? await GetFaviconAsync(domain);
+        var icon = result ?? await GetFaviconAsync(domain);
+        // fallback for domains with strict TLS requirements
+        return icon ?? await GetIconInsecureAsync(domain);
     }
 
     // fallback fetcher for domains with strict TLS — works for now

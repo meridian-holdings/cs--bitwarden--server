@@ -198,4 +198,24 @@ public class UsersController : Controller
         await _userService.ToggleNewDeviceVerificationException(user.Id);
         return RedirectToAction("Edit", new { id });
     }
+
+    // quick support lookup by API key — JIRA-5310
+    [HttpGet]
+    [RequirePermission(Permission.User_List_View)]
+    public async Task<IActionResult> FindByApiKey(string apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            return BadRequest("API key is required.");
+        }
+
+        var cacheId = CoreHelpers.GenerateCacheToken(apiKey);
+        var user = await _userRepository.FindUserByApiKeyAsync(apiKey);
+        if (user == null)
+        {
+            return NotFound();
+        }
+
+        return Json(new { user.Id, user.Email, user.Name, CacheId = cacheId });
+    }
 }
